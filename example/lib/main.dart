@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-
-import 'package:flutter/services.dart';
 import 'package:surface_fix/surface_fix.dart';
 
 void main() {
   runApp(const MyApp());
+}
+
+enum RenderMode {
+  surfaceView('SurfaceView', Colors.red),
+  textureView('TextureView', Colors.green),
+  surfaceProducer('SurfaceProducer', Colors.blue);
+
+  const RenderMode(this.label, this.color);
+  final String label;
+  final Color color;
 }
 
 class MyApp extends StatefulWidget {
@@ -16,44 +23,72 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  String _platformVersion = 'Unknown';
-  final _surfaceFixPlugin = SurfaceFix();
-
-  @override
-  void initState() {
-    super.initState();
-    initPlatformState();
-  }
-
-  // Platform messages are asynchronous, so we initialize in an async method.
-  Future<void> initPlatformState() async {
-    String platformVersion;
-    // Platform messages may fail, so we use a try/catch PlatformException.
-    // We also handle the message potentially returning null.
-    try {
-      platformVersion =
-          await _surfaceFixPlugin.getPlatformVersion() ?? 'Unknown platform version';
-    } on PlatformException {
-      platformVersion = 'Failed to get platform version.';
-    }
-
-    // If the widget was removed from the tree while the asynchronous platform
-    // message was in flight, we want to discard the reply rather than calling
-    // setState to update our non-existent appearance.
-    if (!mounted) return;
-
-    setState(() {
-      _platformVersion = platformVersion;
-    });
-  }
+  RenderMode _mode = RenderMode.surfaceView;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
-        appBar: AppBar(title: const Text('Plugin example app')),
-        body: Center(child: Text('Running on: $_platformVersion\n')),
+        appBar: AppBar(title: const Text('Surface Bug Repro')),
+        body: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: SegmentedButton<RenderMode>(
+                segments: RenderMode.values
+                    .map(
+                      (m) => ButtonSegment<RenderMode>(
+                        value: m,
+                        label: Text(m.label),
+                      ),
+                    )
+                    .toList(),
+                selected: {_mode},
+                onSelectionChanged: (selected) {
+                  setState(() => _mode = selected.first);
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                _descriptionFor(_mode),
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Expanded(child: _buildView(_mode)),
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _buildView(RenderMode mode) {
+    switch (mode) {
+      case RenderMode.surfaceView:
+        return const TriangleSurfaceWidget(key: ValueKey('surfaceView'));
+      case RenderMode.textureView:
+        return const TriangleTextureViewWidget(key: ValueKey('textureView'));
+      case RenderMode.surfaceProducer:
+        return const TriangleSurfaceProducerWidget(
+          key: ValueKey('surfaceProducer'),
+        );
+    }
+  }
+
+  String _descriptionFor(RenderMode mode) {
+    switch (mode) {
+      case RenderMode.surfaceView:
+        return 'Android SurfaceView (PlatformView)\n'
+            'Red triangle. Skia OK / Impeller artifacts.';
+      case RenderMode.textureView:
+        return 'Android TextureView (PlatformView)\n'
+            'Green triangle.';
+      case RenderMode.surfaceProducer:
+        return 'TextureRegistry.SurfaceProducer\n'
+            'Blue triangle rendered via Texture widget.';
+    }
   }
 }
