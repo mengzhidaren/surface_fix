@@ -23,7 +23,7 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  RenderMode _mode = RenderMode.surfaceView;
+  RenderMode _mode = RenderMode.textureView;
 
   @override
   Widget build(BuildContext context) {
