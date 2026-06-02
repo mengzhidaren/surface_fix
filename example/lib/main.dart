@@ -5,30 +5,6 @@ void main() {
   runApp(const MyApp());
 }
 
-// ── Canvas modes ──────────────────────────────────────────────
-enum RenderMode {
-  surfaceView('SurfaceView', Colors.red),
-  textureView('TextureView', Colors.green),
-  surfaceProducer('SurfaceProducer', Colors.blue),
-  surfaceTexture('SurfaceTexture', Colors.amber);
-
-  const RenderMode(this.label, this.color);
-  final String label;
-  final Color color;
-}
-
-// ── EGL modes ─────────────────────────────────────────────────
-enum EglRenderMode {
-  surfaceView('EGL SurfaceView', Colors.orange),
-  textureView('EGL TextureView', Colors.purple),
-  surfaceProducer('EGL Producer', Colors.cyan),
-  surfaceTexture('EGL SurfTex', Colors.lightGreen);
-
-  const EglRenderMode(this.label, this.color);
-  final String label;
-  final Color color;
-}
-
 // ── App ───────────────────────────────────────────────────────
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -39,22 +15,19 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   int _tabIndex = 0;
-  RenderMode _canvasMode = RenderMode.surfaceView;
-  EglRenderMode _eglMode = EglRenderMode.surfaceView;
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       home: Scaffold(
         appBar: AppBar(
-          title: Text(_tabIndex == 0 ? 'Canvas Surface Test' : 'EGL Surface Test'),
+          title: Text(
+            _tabIndex == 0 ? 'Canvas Surface Test' : 'EGL Surface Test',
+          ),
         ),
         body: IndexedStack(
           index: _tabIndex,
-          children: [
-            _buildCanvasTab(),
-            _buildEglTab(),
-          ],
+          children: [_buildCanvasTab(), _buildEglTab()],
         ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _tabIndex,
@@ -76,119 +49,123 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  // ── Canvas Tab ───────────────────────────────────────────────
+  // ── Canvas Tab — 2x2 grid ─────────────────────────────────────
 
   Widget _buildCanvasTab() {
-    return Column(
+    return GridView.count(
+      crossAxisCount: 2,
+      padding: const EdgeInsets.all(4),
+      mainAxisSpacing: 4,
+      crossAxisSpacing: 4,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: SegmentedButton<RenderMode>(
-            segments: RenderMode.values
-                .map((m) => ButtonSegment<RenderMode>(
-                      value: m,
-                      label: Text(m.label),
-                    ))
-                .toList(),
-            selected: {_canvasMode},
-            onSelectionChanged: (s) => setState(() => _canvasMode = s.first),
+        _GridCell(
+          label: 'SurfaceView',
+          color: Colors.red,
+          child: const TriangleSurfaceWidget(key: ValueKey('canvasSurface')),
+        ),
+        _GridCell(
+          label: 'TextureView',
+          color: Colors.green,
+          child: const TriangleTextureViewWidget(
+            key: ValueKey('canvasTexture'),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            _canvasDescription(_canvasMode),
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13),
+        _GridCell(
+          label: 'SurfaceProducer',
+          color: Colors.blue,
+          child: const TriangleSurfaceProducerWidget(
+            key: ValueKey('canvasProducer'),
           ),
         ),
-        const SizedBox(height: 8),
-        Expanded(child: _buildCanvasView(_canvasMode)),
+        _GridCell(
+          label: 'SurfaceTextureEntry',
+          color: Colors.amber,
+          child: const TriangleSurfaceTextureWidget(
+            key: ValueKey('canvasSurfaceTextureEntry'),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildCanvasView(RenderMode mode) {
-    switch (mode) {
-      case RenderMode.surfaceView:
-        return const TriangleSurfaceWidget(key: ValueKey('canvasSurface'));
-      case RenderMode.textureView:
-        return const TriangleTextureViewWidget(key: ValueKey('canvasTexture'));
-      case RenderMode.surfaceProducer:
-        return const TriangleSurfaceProducerWidget(key: ValueKey('canvasProducer'));
-      case RenderMode.surfaceTexture:
-        return const TriangleSurfaceTextureWidget(key: ValueKey('canvasSurfaceTex'));
-    }
-  }
-
-  String _canvasDescription(RenderMode mode) {
-    switch (mode) {
-      case RenderMode.surfaceView:
-        return 'Android SurfaceView — Canvas API\nRed triangle. Skia OK / Impeller artifacts.';
-      case RenderMode.textureView:
-        return 'Android TextureView — Canvas API\nGreen triangle.';
-      case RenderMode.surfaceProducer:
-        return 'TextureRegistry.SurfaceProducer — Canvas API\nBlue triangle via Texture widget.';
-      case RenderMode.surfaceTexture:
-        return 'TextureRegistry.SurfaceTextureEntry — Canvas API\nAmber triangle via Texture widget.';
-    }
-  }
-
-  // ── EGL Tab ──────────────────────────────────────────────────
+  // ── EGL Tab — 2x2 grid ────────────────────────────────────────
 
   Widget _buildEglTab() {
-    return Column(
+    return GridView.count(
+      crossAxisCount: 2,
+      padding: const EdgeInsets.all(4),
+      mainAxisSpacing: 4,
+      crossAxisSpacing: 4,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: SegmentedButton<EglRenderMode>(
-            segments: EglRenderMode.values
-                .map((m) => ButtonSegment<EglRenderMode>(
-                      value: m,
-                      label: Text(m.label),
-                    ))
-                .toList(),
-            selected: {_eglMode},
-            onSelectionChanged: (s) => setState(() => _eglMode = s.first),
+        _GridCell(
+          label: 'EGL SurfaceView',
+          color: Colors.orange,
+          child: const EglSurfaceViewWidget(key: ValueKey('eglSurface')),
+        ),
+        _GridCell(
+          label: 'EGL TextureView',
+          color: Colors.purple,
+          child: const EglTextureViewWidget(key: ValueKey('eglTexture')),
+        ),
+        _GridCell(
+          label: 'EGL SurfaceProducer',
+          color: Colors.cyan,
+          child: const EglSurfaceProducerWidget(
+            key: ValueKey('eglSurfaceProducer'),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            _eglDescription(_eglMode),
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 13),
+        _GridCell(
+          label: 'EGL SurfaceTextureEntry',
+          color: Colors.lightGreen,
+          child: const EglSurfaceTextureWidget(
+            key: ValueKey('eglSurfaceTextureEntry'),
           ),
         ),
-        const SizedBox(height: 8),
-        Expanded(child: _buildEglView(_eglMode)),
       ],
     );
   }
+}
 
-  Widget _buildEglView(EglRenderMode mode) {
-    switch (mode) {
-      case EglRenderMode.surfaceView:
-        return const EglSurfaceViewWidget(key: ValueKey('eglSurface'));
-      case EglRenderMode.textureView:
-        return const EglTextureViewWidget(key: ValueKey('eglTexture'));
-      case EglRenderMode.surfaceProducer:
-        return const EglSurfaceProducerWidget(key: ValueKey('eglProducer'));
-      case EglRenderMode.surfaceTexture:
-        return const EglSurfaceTextureWidget(key: ValueKey('eglSurfaceTex'));
-    }
-  }
+// ── Grid cell with label overlay ──────────────────────────────
+class _GridCell extends StatelessWidget {
+  const _GridCell({
+    required this.label,
+    required this.color,
+    required this.child,
+  });
 
-  String _eglDescription(EglRenderMode mode) {
-    switch (mode) {
-      case EglRenderMode.surfaceView:
-        return 'Android SurfaceView — EGL14 + GLES20\nOrange triangle.';
-      case EglRenderMode.textureView:
-        return 'Android TextureView — EGL14 + GLES20\nPurple triangle.';
-      case EglRenderMode.surfaceProducer:
-        return 'TextureRegistry.SurfaceProducer — EGL14 + GLES20\nCyan triangle via Texture widget.';
-      case EglRenderMode.surfaceTexture:
-        return 'TextureRegistry.SurfaceTextureEntry — EGL14 + GLES20\nLime green triangle via Texture widget.';
-    }
+  final String label;
+  final Color color;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: color, width: 2),
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            color: color.withValues(alpha: 0.15),
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+          ),
+          Expanded(child: child),
+        ],
+      ),
+    );
   }
 }
